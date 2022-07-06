@@ -4,8 +4,8 @@ import com.company.searchstore.dto.MovieCatalogDTO;
 import com.company.searchstore.dto.SearchDTO;
 import com.company.searchstore.services.SearchService;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +34,8 @@ public class SearchController {
   }
 
   @GetMapping("autocomplete")
-  public ResponseEntity<List<String>> getSuggestions() {
-    return ResponseEntity.ok(service.getSuggestions());
+  public ResponseEntity<Set<String>> getSuggestions(@Valid SearchDTO searchDTO) throws IOException {
+    return ResponseEntity.ok(service.getSuggestions(searchDTO));
   }
 
   @GetMapping("facets")

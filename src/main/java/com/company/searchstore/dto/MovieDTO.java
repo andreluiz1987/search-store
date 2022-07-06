@@ -1,5 +1,6 @@
 package com.company.searchstore.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MovieDTO {
 
+  private int code;
   private int year;
   private String director;
   private double rating;
@@ -21,4 +23,6 @@ public class MovieDTO {
   List<String> genre;
   private int votes;
   private int metascore;
+  @JsonProperty("search_after")
+  private Object[] searchAfter;
 }

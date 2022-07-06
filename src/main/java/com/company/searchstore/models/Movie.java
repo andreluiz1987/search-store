@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Movie {
 
+  private int code;
   private int year;
   private String director;
   private double rating;

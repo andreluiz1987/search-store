@@ -1,0 +1,80 @@
+{
+  "mappings": {
+    "properties": {
+      "actors": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "date": {
+        "type": "keyword",
+        "doc_values": false
+      },
+      "description": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "director": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "genre": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "metascore": {
+        "type": "long"
+      },
+      "rating": {
+        "type": "float"
+      },
+      "revenue": {
+        "type": "float"
+      },
+      "runtime": {
+        "type": "long"
+      },
+      "title": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "title_suggest": {
+        "type": "completion",
+        "analyzer": "simple",
+        "preserve_separators": true,
+        "preserve_position_increments": true,
+        "max_input_length": 50
+      },
+      "votes": {
+        "type": "long"
+      },
+      "year": {
+        "type": "long"
+      }
+    }
+  }
+}

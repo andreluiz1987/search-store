@@ -1,16 +1,20 @@
 package com.company.searchstore.services;
 
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.company.searchstore.core.SearchCoreService;
+import com.company.searchstore.core.fields.FieldAttr.Suggest;
 import com.company.searchstore.dto.MovieCatalogDTO;
+import com.company.searchstore.dto.MovieDTO;
 import com.company.searchstore.dto.SearchDTO;
 import com.company.searchstore.mappers.MovieMapper;
 import com.company.searchstore.models.Movie;
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,22 +26,35 @@ public class SearchService {
   private final MovieMapper mapper;
   private final SearchCoreService service;
 
+  private static final BiConsumer<MovieDTO, Object[]> setAfterParamsFunction = MovieDTO::setSearchAfter;
+
   public MovieCatalogDTO getAll(SearchDTO searchDTO) throws IOException {
-    var response = service.getAll(searchDTO.getSize(), searchDTO.getFrom());
-    var movies = response.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
+    var response = service.getAll(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter());
+    var movies = new ArrayList<MovieDTO>();
+    for (var hit : response.hits().hits()) {
+      var dto = mapper.toDto(hit.source());
+      dto.setSearchAfter(new Object[]{hit.score(), dto.getCode()});
+      movies.add(dto);
+    }
     return MovieCatalogDTO.builder()
-        .movies(mapper.toDtos(movies))
-        .size(getTotalHits(response))
+        .movies(movies)
+        .size(searchDTO.getSize())
+        .total(getTotalHits(response))
         .build();
   }
 
   public MovieCatalogDTO search(SearchDTO searchDTO) throws IOException {
-    return MovieCatalogDTO.builder()
-        .build();
+    return MovieCatalogDTO.builder().build();
   }
 
-  public List<String> getSuggestions() {
-    return List.of("");
+  public Set<String> getSuggestions(SearchDTO searchDTO) throws IOException {
+    var suggestionMovies = new HashSet<String>();
+    var response = service.autocomplete(searchDTO.getText(), searchDTO.getSize());
+    var suggestions = response.suggest().get(Suggest.TITLE_SUGGEST_NAME);
+    for (var item : suggestions) {
+      suggestionMovies.addAll(item.completion().options().stream().map(o -> o.source().getTitle()).collect(Collectors.toSet()));
+    }
+    return suggestionMovies;
   }
 
   public Map<String, Integer> getFacets() {
