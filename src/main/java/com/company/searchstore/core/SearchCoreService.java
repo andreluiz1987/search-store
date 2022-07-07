@@ -27,6 +27,7 @@ import com.company.searchstore.core.fields.FieldAttr.Suggest;
 import com.company.searchstore.dto.MovieSuggestDTO;
 import com.company.searchstore.models.Movie;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,36 +44,39 @@ public class SearchCoreService {
   private final ElasticsearchClient client;
 
   public SearchResponse<Movie> searchTerm(String term, int size, List<String> searchAfter) throws IOException {
-    SearchRequest searchRequest = SearchRequest.of(s -> {
-      s.index(index);
-      s.size(size);
-      addQuery(s, term);
-      addSearchAfter(searchAfter, s);
-      addSort(s);
-      return s;
-    });
+    SearchRequest searchRequest = getSearchRequest(term, size, searchAfter, Collections.emptyMap());
     return client.search(searchRequest, Movie.class);
   }
 
   public SearchResponse<Void> getFacets(String term, List<String> searchAfter) throws IOException {
     Map<String, Aggregation> map = new HashMap<>();
-
     map.put(Aggregations.FACET_GENRE_NAME, new Aggregation.Builder()
         .terms(new TermsAggregation.Builder().field(Aggregations.FACET_GENRE).size(25).build())
         .build());
     map.put(Aggregations.FACET_CERTIFICATE_NAME, new Aggregation.Builder()
         .terms(new TermsAggregation.Builder().field(Aggregations.FACET_CERTIFICATE).size(10).build())
         .build());
-    SearchRequest searchRequest = SearchRequest.of(s -> {
+    SearchRequest searchRequest = getSearchRequest(term, 0, searchAfter, map);
+    return client.search(searchRequest, Void.class);
+  }
+
+  private SearchRequest getSearchRequest(String term, int size, List<String> searchAfter, Map<String, Aggregation> map) {
+    return SearchRequest.of(s -> {
       s.index(index);
-      s.size(0);
+      s.size(size);
       addQuery(s, term);
       addSearchAfter(searchAfter, s);
       addSort(s);
-      s.aggregations(map);
+      addAggregation(map, s);
+      //addSuggestion(s, term);
       return s;
     });
-    return client.search(searchRequest, Void.class);
+  }
+
+  private void addAggregation(Map<String, Aggregation> map, Builder s) {
+    if (!map.isEmpty()) {
+      s.aggregations(map);
+    }
   }
 
   private void addSuggestion(Builder builder, String term) {
@@ -114,9 +118,14 @@ public class SearchCoreService {
     if (isEmpty(term)) {
       builder.query(Query.of(q -> q.matchAll(MatchAllQuery.of(ma -> ma))));
     } else {
-      var matchQuery = Query.of(q -> q.match(MatchQuery.of(m -> m.field("title").query(term).operator(Operator.And).boost(10f))));
+      var matchQuery = Query.of(q -> q.match(MatchQuery.of(m -> m.field(FieldAttr.Movie.TITLE_FIELD).query(term).operator(Operator.And).boost(10f))));
       var multiMatchQuery = Query.of(q -> q.multiMatch(MultiMatchQuery.of(m ->
-          m.fields("title", "description", "actors", "director").operator(Operator.Or).query(term))));
+          m.fields(
+              applyFieldBoost(FieldAttr.Movie.TITLE_FIELD, 5),
+              applyFieldBoost(FieldAttr.Movie.DESCRIPTION_FIELD, 2),
+              applyFieldBoost(FieldAttr.Movie.ACTORS_SUGGEST, 5),
+              applyFieldBoost(FieldAttr.Movie.DIRECTOR_SUGGEST, 5))
+              .operator(Operator.Or).query(term))));
       var boolQuery = BoolQuery.of(
           bq -> {
             bq.should(matchQuery, multiMatchQuery);
@@ -125,6 +134,10 @@ public class SearchCoreService {
       );
       builder.query(Query.of(q -> q.bool(boolQuery)));
     }
+  }
+
+  private String applyFieldBoost(String field, int boost) {
+    return String.format("%s^%s", field, boost);
   }
 
   private void addSearchAfter(List<String> searchAfter, SearchRequest.Builder s) {

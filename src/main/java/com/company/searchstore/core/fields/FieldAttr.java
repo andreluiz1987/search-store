@@ -12,6 +12,9 @@ public final class FieldAttr {
 
     public static final String TITLE_FIELD = "title";
     public static final String TITLE_SUGGEST = "title.suggest";
+    public static final String DESCRIPTION_FIELD = "description";
+    public static final String ACTORS_SUGGEST = "actors";
+    public static final String DIRECTOR_SUGGEST = "director";
   }
 
   public static class Suggest {

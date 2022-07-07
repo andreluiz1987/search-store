@@ -11,16 +11,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MovieDTO {
 
+  private String title;
+  private String director;
+  private String description;
+  List<String> actors;
   private int code;
   private int year;
   private String avatar;
   private String certificate;
-  private String director;
   private double rating;
-  private String description;
   private String runtime;
-  private String title;
-  List<String> actors;
   private String revenue;
   List<String> genre;
   private int votes;
