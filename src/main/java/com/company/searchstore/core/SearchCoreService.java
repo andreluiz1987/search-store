@@ -22,6 +22,7 @@ import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import co.elastic.clients.elasticsearch.core.search.SuggestFuzziness;
 import co.elastic.clients.elasticsearch.core.search.Suggester;
 import com.company.searchstore.core.fields.FieldAttr;
+import com.company.searchstore.core.fields.FieldAttr.Aggregations;
 import com.company.searchstore.core.fields.FieldAttr.Suggest;
 import com.company.searchstore.dto.MovieSuggestDTO;
 import com.company.searchstore.models.Movie;
@@ -53,11 +54,11 @@ public class SearchCoreService {
     return client.search(searchRequest, Movie.class);
   }
 
-  public SearchResponse<Void> getFacets(String term, int size, List<String> searchAfter) throws IOException {
+  public SearchResponse<Void> getFacets(String term, List<String> searchAfter) throws IOException {
     Map<String, Aggregation> map = new HashMap<>();
 
-    map.put("agg_genre", new Aggregation.Builder()
-        .terms(new TermsAggregation.Builder().field("genre.keyword").size(25).build())
+    map.put(Aggregations.FACET_GENRE_NAME, new Aggregation.Builder()
+        .terms(new TermsAggregation.Builder().field(Aggregations.FACET_GENRE).size(25).build())
         .build());
 
     SearchRequest searchRequest = SearchRequest.of(s -> {
