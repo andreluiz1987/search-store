@@ -7,6 +7,7 @@ import co.elastic.clients.elasticsearch._types.FieldSort;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchAllQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
@@ -35,7 +36,7 @@ public class SearchCoreService {
   private String index;
   private final ElasticsearchClient client;
 
-  public SearchResponse<Movie> getAll(String term, int size, List<String> searchAfter) throws IOException {
+  public SearchResponse<Movie> searchTerm(String term, int size, List<String> searchAfter) throws IOException {
     SearchRequest searchRequest = SearchRequest.of(s -> {
       s.index(index);
       s.size(size);
@@ -44,8 +45,20 @@ public class SearchCoreService {
       addSort(s);
       return s;
     });
-    var response = client.search(searchRequest, Movie.class);
-    return response;
+    return client.search(searchRequest, Movie.class);
+  }
+
+  private void addSuggestion(Builder builder, String term) {
+    Map<String, FieldSuggester> map = new HashMap<>();
+    map.put(Suggest.DID_YOU_MEAN, FieldSuggester.of(fs -> fs.phrase(p ->
+            p.maxErrors(2.0).size(5).field(FieldAttr.Movie.TITLE_SUGGEST)
+        )
+    ));
+    Suggester suggester = Suggester.of(sg -> sg
+        .suggesters(map)
+        .text(term)
+    );
+    builder.suggest(suggester);
   }
 
   public SearchResponse<MovieSuggestDTO> autocomplete(String term, int size) throws IOException {
@@ -74,7 +87,7 @@ public class SearchCoreService {
     if (isEmpty(term)) {
       builder.query(Query.of(q -> q.matchAll(MatchAllQuery.of(ma -> ma))));
     } else {
-      //TODO
+      builder.query(Query.of(q -> q.match(MatchQuery.of(m -> m.field("title").query(term)))));
     }
   }
 

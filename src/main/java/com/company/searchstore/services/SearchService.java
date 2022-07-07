@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,25 +25,24 @@ public class SearchService {
   private final MovieMapper mapper;
   private final SearchCoreService service;
 
-  private static final BiConsumer<MovieDTO, Object[]> setAfterParamsFunction = MovieDTO::setSearchAfter;
-
-  public MovieCatalogDTO getAll(SearchDTO searchDTO) throws IOException {
-    var response = service.getAll(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter());
+  public MovieCatalogDTO search(SearchDTO searchDTO) throws IOException {
+    var response = service.searchTerm(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter());
     var movies = new ArrayList<MovieDTO>();
+    getResultDocuments(response, movies);
+    return MovieCatalogDTO.builder()
+        .movies(movies)
+        .size(searchDTO.getSize())
+        .total(getTotalHits(response))
+        .suggestion("")
+        .build();
+  }
+
+  private void getResultDocuments(SearchResponse<Movie> response, ArrayList<MovieDTO> movies) {
     for (var hit : response.hits().hits()) {
       var dto = mapper.toDto(hit.source());
       dto.setSearchAfter(new Object[]{hit.score(), dto.getCode()});
       movies.add(dto);
     }
-    return MovieCatalogDTO.builder()
-        .movies(movies)
-        .size(searchDTO.getSize())
-        .total(getTotalHits(response))
-        .build();
-  }
-
-  public MovieCatalogDTO search(SearchDTO searchDTO) throws IOException {
-    return MovieCatalogDTO.builder().build();
   }
 
   public Set<String> getSuggestions(SearchDTO searchDTO) throws IOException {

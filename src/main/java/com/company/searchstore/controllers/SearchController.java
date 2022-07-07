@@ -25,12 +25,12 @@ public class SearchController {
 
   @GetMapping("all")
   public ResponseEntity<MovieCatalogDTO> getAll(@Valid SearchDTO searchDTO) throws IOException {
-    return ResponseEntity.ok(service.getAll(searchDTO));
+    return ResponseEntity.ok(service.search(searchDTO));
   }
 
   @GetMapping("search")
-  public ResponseEntity<MovieCatalogDTO> search() {
-    return null;
+  public ResponseEntity<MovieCatalogDTO> search(@Valid SearchDTO searchDTO) throws IOException {
+    return ResponseEntity.ok(service.search(searchDTO));
   }
 
   @GetMapping("autocomplete")

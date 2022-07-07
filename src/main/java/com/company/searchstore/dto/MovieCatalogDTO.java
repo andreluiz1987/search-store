@@ -14,5 +14,6 @@ public class MovieCatalogDTO {
 
   private long size;
   private long total;
+  private String suggestion;
   private List<MovieDTO> movies;
 }
