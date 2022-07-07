@@ -15,14 +15,16 @@ import lombok.NoArgsConstructor;
 public class Movie {
 
   private int code;
+  private String avatar;
+  private String certificate;
   private int year;
   private String director;
   private double rating;
   private String description;
-  private int runtime;
+  private String runtime;
   private String title;
   List<String> actors;
-  private double revenue;
+  private String revenue;
   List<String> genre;
   private int votes;
   private int metascore;

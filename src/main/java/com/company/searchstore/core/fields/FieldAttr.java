@@ -29,8 +29,9 @@ public final class FieldAttr {
     private Aggregations() {
     }
 
-    public static final String FACET_GENRE_MAP_NAME = "GENRE";
     public static final String FACET_GENRE_NAME = "agg_genre";
+    public static final String FACET_CERTIFICATE_NAME = "agg_certificate";
     public static final String FACET_GENRE = "genre.keyword";
+    public static final String FACET_CERTIFICATE = "certificate";
   }
 }

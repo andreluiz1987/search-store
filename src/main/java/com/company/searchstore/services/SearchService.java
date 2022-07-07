@@ -1,6 +1,6 @@
 package com.company.searchstore.services;
 
-import static com.company.searchstore.core.fields.FieldAttr.Aggregations.FACET_GENRE_MAP_NAME;
+import static com.company.searchstore.core.fields.FieldAttr.Aggregations.FACET_CERTIFICATE_NAME;
 import static com.company.searchstore.core.fields.FieldAttr.Aggregations.FACET_GENRE_NAME;
 
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
@@ -64,7 +64,7 @@ public class SearchService {
 
   public Map<String, Map<String, Long>> getFacets(SearchDTO searchDTO) throws IOException {
     var response = service.getFacets(searchDTO.getText(), searchDTO.getSearchAfter());
-    return parseResults(response, List.of(FACET_GENRE_NAME));
+    return parseResults(response, List.of(FACET_GENRE_NAME, FACET_CERTIFICATE_NAME));
   }
 
   private Map<String, Map<String, Long>> parseResults(SearchResponse<Void> response, List<String> aggNames) {
@@ -72,7 +72,7 @@ public class SearchService {
     Map<String, Long> values = new HashMap<>();
     for (var name : aggNames) {
       var list = response.aggregations().get(name).sterms().buckets().array();
-      facets.put(FACET_GENRE_MAP_NAME, list.stream().collect(Collectors.toMap(StringTermsBucket::key, MultiBucketBase::docCount)));
+      facets.put(name, list.stream().collect(Collectors.toMap(StringTermsBucket::key, MultiBucketBase::docCount)));
     }
     return facets;
   }

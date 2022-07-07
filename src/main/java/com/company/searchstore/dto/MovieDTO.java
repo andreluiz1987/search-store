@@ -13,13 +13,15 @@ public class MovieDTO {
 
   private int code;
   private int year;
+  private String avatar;
+  private String certificate;
   private String director;
   private double rating;
   private String description;
-  private int runtime;
+  private String runtime;
   private String title;
   List<String> actors;
-  private double revenue;
+  private String revenue;
   List<String> genre;
   private int votes;
   private int metascore;

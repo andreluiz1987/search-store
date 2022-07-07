@@ -60,7 +60,9 @@ public class SearchCoreService {
     map.put(Aggregations.FACET_GENRE_NAME, new Aggregation.Builder()
         .terms(new TermsAggregation.Builder().field(Aggregations.FACET_GENRE).size(25).build())
         .build());
-
+    map.put(Aggregations.FACET_CERTIFICATE_NAME, new Aggregation.Builder()
+        .terms(new TermsAggregation.Builder().field(Aggregations.FACET_CERTIFICATE).size(10).build())
+        .build());
     SearchRequest searchRequest = SearchRequest.of(s -> {
       s.index(index);
       s.size(0);
