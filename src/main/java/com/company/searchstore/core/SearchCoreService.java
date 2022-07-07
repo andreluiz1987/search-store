@@ -57,10 +57,7 @@ public class SearchCoreService {
     Map<String, Aggregation> map = new HashMap<>();
 
     map.put("agg_genre", new Aggregation.Builder()
-        .terms(new TermsAggregation.Builder().field("genre.keyword").build())
-        .build());
-    map.put("agg_rating", new Aggregation.Builder()
-        .terms(new TermsAggregation.Builder().field("rating").build())
+        .terms(new TermsAggregation.Builder().field("genre.keyword").size(25).build())
         .build());
 
     SearchRequest searchRequest = SearchRequest.of(s -> {

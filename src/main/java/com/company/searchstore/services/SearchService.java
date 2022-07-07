@@ -61,20 +61,15 @@ public class SearchService {
 
   public Map<String, Map<String, Long>> getFacets(SearchDTO searchDTO) throws IOException {
     var response = service.getFacets(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter());
-    return parseResults(response, List.of("agg_genre", "agg_rating"));
+    return parseResults(response, List.of("agg_genre"));
   }
 
   private Map<String, Map<String, Long>> parseResults(SearchResponse<Void> response, List<String> aggNames) {
     Map<String, Map<String, Long>> facets = new HashMap<>();
     Map<String, Long> values = new HashMap<>();
     for (var name : aggNames) {
-      if (response.aggregations().get(name).isDterms()) {
-        var list = response.aggregations().get(name).dterms().buckets().array();
-        facets.put("RATING", list.stream().collect(Collectors.toMap(e -> String.valueOf(e.key()), MultiBucketBase::docCount)));
-      } else {
-        var list = response.aggregations().get(name).sterms().buckets().array();
-        facets.put("GENRE", list.stream().collect(Collectors.toMap(StringTermsBucket::key, MultiBucketBase::docCount)));
-      }
+      var list = response.aggregations().get(name).sterms().buckets().array();
+      facets.put("GENRE", list.stream().collect(Collectors.toMap(StringTermsBucket::key, MultiBucketBase::docCount)));
     }
     return facets;
   }
