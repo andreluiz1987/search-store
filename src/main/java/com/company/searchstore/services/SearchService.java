@@ -1,5 +1,7 @@
 package com.company.searchstore.services;
 
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.company.searchstore.core.SearchCoreService;
 import com.company.searchstore.core.fields.FieldAttr.Suggest;
@@ -10,7 +12,9 @@ import com.company.searchstore.mappers.MovieMapper;
 import com.company.searchstore.models.Movie;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -55,8 +59,24 @@ public class SearchService {
     return suggestionMovies;
   }
 
-  public Map<String, Integer> getFacets() {
-    return Map.of("", 0);
+  public Map<String, Map<String, Long>> getFacets(SearchDTO searchDTO) throws IOException {
+    var response = service.getFacets(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter());
+    return parseResults(response, List.of("agg_genre", "agg_rating"));
+  }
+
+  private Map<String, Map<String, Long>> parseResults(SearchResponse<Void> response, List<String> aggNames) {
+    Map<String, Map<String, Long>> facets = new HashMap<>();
+    Map<String, Long> values = new HashMap<>();
+    for (var name : aggNames) {
+      if (response.aggregations().get(name).isDterms()) {
+        var list = response.aggregations().get(name).dterms().buckets().array();
+        facets.put("RATING", list.stream().collect(Collectors.toMap(e -> String.valueOf(e.key()), MultiBucketBase::docCount)));
+      } else {
+        var list = response.aggregations().get(name).sterms().buckets().array();
+        facets.put("GENRE", list.stream().collect(Collectors.toMap(StringTermsBucket::key, MultiBucketBase::docCount)));
+      }
+    }
+    return facets;
   }
 
   private long getTotalHits(SearchResponse<Movie> response) {

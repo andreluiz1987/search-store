@@ -39,7 +39,7 @@ public class SearchController {
   }
 
   @GetMapping("facets")
-  public ResponseEntity<Map<String, Integer>> getFacets() {
-    return ResponseEntity.ok(service.getFacets());
+  public ResponseEntity<Map<String, Map<String, Long>>> getFacets(@Valid SearchDTO searchDTO) throws IOException {
+    return ResponseEntity.ok(service.getFacets(searchDTO));
   }
 }

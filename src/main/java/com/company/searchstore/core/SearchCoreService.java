@@ -6,8 +6,13 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldSort;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchAllQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
@@ -46,6 +51,28 @@ public class SearchCoreService {
       return s;
     });
     return client.search(searchRequest, Movie.class);
+  }
+
+  public SearchResponse<Void> getFacets(String term, int size, List<String> searchAfter) throws IOException {
+    Map<String, Aggregation> map = new HashMap<>();
+
+    map.put("agg_genre", new Aggregation.Builder()
+        .terms(new TermsAggregation.Builder().field("genre.keyword").build())
+        .build());
+    map.put("agg_rating", new Aggregation.Builder()
+        .terms(new TermsAggregation.Builder().field("rating").build())
+        .build());
+
+    SearchRequest searchRequest = SearchRequest.of(s -> {
+      s.index(index);
+      s.size(0);
+      addQuery(s, term);
+      addSearchAfter(searchAfter, s);
+      addSort(s);
+      s.aggregations(map);
+      return s;
+    });
+    return client.search(searchRequest, Void.class);
   }
 
   private void addSuggestion(Builder builder, String term) {
@@ -87,7 +114,16 @@ public class SearchCoreService {
     if (isEmpty(term)) {
       builder.query(Query.of(q -> q.matchAll(MatchAllQuery.of(ma -> ma))));
     } else {
-      builder.query(Query.of(q -> q.match(MatchQuery.of(m -> m.field("title").query(term)))));
+      var matchQuery = Query.of(q -> q.match(MatchQuery.of(m -> m.field("title").query(term).operator(Operator.And).boost(10f))));
+      var multiMatchQuery = Query.of(q -> q.multiMatch(MultiMatchQuery.of(m ->
+          m.fields("title", "description", "actors", "director").operator(Operator.Or).query(term))));
+      var boolQuery = BoolQuery.of(
+          bq -> {
+            bq.should(matchQuery, multiMatchQuery);
+            return bq;
+          }
+      );
+      builder.query(Query.of(q -> q.bool(boolQuery)));
     }
   }
 
