@@ -21,6 +21,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.FieldSuggester;
+import co.elastic.clients.elasticsearch.core.search.PhraseSuggester;
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import co.elastic.clients.elasticsearch.core.search.SuggestFuzziness;
 import co.elastic.clients.elasticsearch.core.search.Suggester;
@@ -76,7 +77,6 @@ public class SearchCoreService {
       addSearchAfter(searchAfter, s);
       addSort(s);
       addAggregation(map, s);
-      //addSuggestion(s, term);
       return s;
     });
   }
@@ -94,7 +94,10 @@ public class SearchCoreService {
         )
     ));
     Suggester suggester = Suggester.of(sg -> sg
-        .suggesters(map)
+        .suggesters("did_you_mean", new FieldSuggester.Builder()
+            .phrase(PhraseSuggester.of(p ->
+                p.maxErrors(2.0).size(5).field(FieldAttr.Movie.TITLE_SUGGEST)))
+            .build())
         .text(term)
     );
     builder.suggest(suggester);

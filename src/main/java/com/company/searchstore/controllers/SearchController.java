@@ -2,6 +2,7 @@ package com.company.searchstore.controllers;
 
 import com.company.searchstore.dto.MovieCatalogDTO;
 import com.company.searchstore.dto.SearchDTO;
+import com.company.searchstore.services.SearchHLRCService;
 import com.company.searchstore.services.SearchService;
 import java.io.IOException;
 import java.util.Map;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SearchController {
 
   private final SearchService service;
+  private final SearchHLRCService searchHLRC;
 
   @GetMapping("all")
   public ResponseEntity<MovieCatalogDTO> getAll(@Valid SearchDTO searchDTO) throws IOException {
@@ -30,7 +32,7 @@ public class SearchController {
 
   @GetMapping("search")
   public ResponseEntity<MovieCatalogDTO> search(@Valid SearchDTO searchDTO) throws IOException {
-    return ResponseEntity.ok(service.search(searchDTO));
+    return ResponseEntity.ok(searchHLRC.search(searchDTO));
   }
 
   @GetMapping("autocomplete")

@@ -40,7 +40,6 @@ public class SearchService {
         .movies(movies)
         .size(searchDTO.getSize())
         .total(getTotalHits(response))
-        .suggestion("")
         .build();
   }
 
