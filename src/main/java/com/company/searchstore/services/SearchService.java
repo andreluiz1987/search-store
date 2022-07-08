@@ -33,7 +33,7 @@ public class SearchService {
   private final SearchCoreService service;
 
   public MovieCatalogDTO search(SearchDTO searchDTO) throws IOException {
-    var response = service.searchTerm(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter());
+    var response = service.searchTerm(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter(), searchDTO.getMapFilters());
     var movies = new ArrayList<MovieDTO>();
     getResultDocuments(response, movies);
     return MovieCatalogDTO.builder()
@@ -63,7 +63,7 @@ public class SearchService {
   }
 
   public Map<String, Map<String, Long>> getFacets(SearchDTO searchDTO) throws IOException {
-    var response = service.getFacets(searchDTO.getText(), searchDTO.getSearchAfter());
+    var response = service.getFacets(searchDTO.getText(), searchDTO.getSearchAfter(), searchDTO.getMapFilters());
     return parseResults(response, List.of(FACET_GENRE_NAME, FACET_CERTIFICATE_NAME));
   }
 

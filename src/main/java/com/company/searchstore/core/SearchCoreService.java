@@ -4,6 +4,7 @@ import static org.apache.http.util.TextUtils.isEmpty;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldSort;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
@@ -14,6 +15,8 @@ import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -27,10 +30,12 @@ import com.company.searchstore.core.fields.FieldAttr.Suggest;
 import com.company.searchstore.dto.MovieSuggestDTO;
 import com.company.searchstore.models.Movie;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -43,12 +48,12 @@ public class SearchCoreService {
   private String index;
   private final ElasticsearchClient client;
 
-  public SearchResponse<Movie> searchTerm(String term, int size, List<String> searchAfter) throws IOException {
-    SearchRequest searchRequest = getSearchRequest(term, size, searchAfter, Collections.emptyMap());
+  public SearchResponse<Movie> searchTerm(String term, int size, List<String> searchAfter, Map<String, List<String>> filters) throws IOException {
+    SearchRequest searchRequest = getSearchRequest(term, size, searchAfter, Collections.emptyMap(), filters);
     return client.search(searchRequest, Movie.class);
   }
 
-  public SearchResponse<Void> getFacets(String term, List<String> searchAfter) throws IOException {
+  public SearchResponse<Void> getFacets(String term, List<String> searchAfter, Map<String, List<String>> filters) throws IOException {
     Map<String, Aggregation> map = new HashMap<>();
     map.put(Aggregations.FACET_GENRE_NAME, new Aggregation.Builder()
         .terms(new TermsAggregation.Builder().field(Aggregations.FACET_GENRE).size(25).build())
@@ -56,15 +61,18 @@ public class SearchCoreService {
     map.put(Aggregations.FACET_CERTIFICATE_NAME, new Aggregation.Builder()
         .terms(new TermsAggregation.Builder().field(Aggregations.FACET_CERTIFICATE).size(10).build())
         .build());
-    SearchRequest searchRequest = getSearchRequest(term, 0, searchAfter, map);
+    SearchRequest searchRequest = getSearchRequest(term, 0, searchAfter, map, filters);
     return client.search(searchRequest, Void.class);
   }
 
-  private SearchRequest getSearchRequest(String term, int size, List<String> searchAfter, Map<String, Aggregation> map) {
+  private SearchRequest getSearchRequest(String term,
+      int size,
+      List<String> searchAfter,
+      Map<String, Aggregation> map, Map<String, List<String>> filters) {
     return SearchRequest.of(s -> {
       s.index(index);
       s.size(size);
-      addQuery(s, term);
+      addQuery(s, term, filters);
       addSearchAfter(searchAfter, s);
       addSort(s);
       addAggregation(map, s);
@@ -114,26 +122,59 @@ public class SearchCoreService {
     return client.search(searchRequest, MovieSuggestDTO.class);
   }
 
-  private void addQuery(Builder builder, String term) {
+  private void addQuery(Builder builder, String term, Map<String, List<String>> filters) {
     if (isEmpty(term)) {
       builder.query(Query.of(q -> q.matchAll(MatchAllQuery.of(ma -> ma))));
     } else {
-      var matchQuery = Query.of(q -> q.match(MatchQuery.of(m -> m.field(FieldAttr.Movie.TITLE_FIELD).query(term).operator(Operator.And).boost(10f))));
-      var multiMatchQuery = Query.of(q -> q.multiMatch(MultiMatchQuery.of(m ->
-          m.fields(
-              applyFieldBoost(FieldAttr.Movie.TITLE_FIELD, 5),
-              applyFieldBoost(FieldAttr.Movie.DESCRIPTION_FIELD, 2),
-              applyFieldBoost(FieldAttr.Movie.ACTORS_SUGGEST, 5),
-              applyFieldBoost(FieldAttr.Movie.DIRECTOR_SUGGEST, 5))
-              .operator(Operator.Or).query(term))));
-      var boolQuery = BoolQuery.of(
-          bq -> {
-            bq.should(matchQuery, multiMatchQuery);
-            return bq;
-          }
-      );
-      builder.query(Query.of(q -> q.bool(boolQuery)));
+      buildBoolQuery(builder, term, filters);
     }
+  }
+
+  private void buildBoolQuery(Builder builder, String term, Map<String, List<String>> mapFilters) {
+    var filters = getFilters(mapFilters);
+    var matchQuery = Query
+        .of(q -> q.match(MatchQuery.of(m -> m.field(FieldAttr.Movie.TITLE_FIELD).query(term).operator(Operator.And).boost(10f))));
+    var multiMatchQuery = Query.of(q -> q.multiMatch(MultiMatchQuery.of(m ->
+        m.fields(
+            applyFieldBoost(FieldAttr.Movie.TITLE_FIELD, 5),
+            applyFieldBoost(FieldAttr.Movie.DESCRIPTION_FIELD, 2),
+            applyFieldBoost(FieldAttr.Movie.ACTORS_SUGGEST, 5))
+            .operator(Operator.Or).query(term))));
+    var boolQuery = BoolQuery.of(
+        bq -> {
+          bq.filter(filters);
+          bq.should(matchQuery, multiMatchQuery);
+          bq.minimumShouldMatch("1");
+          return bq;
+        }
+    );
+    builder.query(Query.of(q -> q.bool(boolQuery)));
+  }
+
+  private List<Query> getFilters(Map<String, List<String>> mapFilters) {
+    var queries = new ArrayList<Query>();
+    var genres = mapFilters.get("genres");
+    if (!genres.isEmpty()) {
+      var filters = genres.stream().map(g -> FieldValue.of(fv -> fv.stringValue(g))).collect(Collectors.toList());
+      queries.add(getTermsQuery(filters, FieldAttr.Movie.GENRE_FIELD));
+    }
+
+    var certificates = mapFilters.get("certificates");
+    if (!certificates.isEmpty()) {
+      var filters = certificates.stream().map(g -> FieldValue.of(fv -> fv.stringValue(g))).collect(Collectors.toList());
+      queries.add(getTermsQuery(filters, FieldAttr.Movie.CERTIFICATE_FIELD));
+    }
+    return queries;
+  }
+
+  private Query getTermsQuery(List<FieldValue> filters, String field) {
+    var termsGenre = Query.of(q ->
+        q.terms(TermsQuery.of(tsq ->
+            tsq.field(field)
+                .terms(TermsQueryField.of(tf -> tf.value(
+                    filters
+                ))))));
+    return termsGenre;
   }
 
   private String applyFieldBoost(String field, int boost) {

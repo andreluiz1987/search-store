@@ -1,7 +1,9 @@
 package com.company.searchstore.dto;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -10,6 +12,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.Singular;
+import org.springframework.util.CollectionUtils;
 
 @Getter
 @Setter
@@ -27,8 +31,21 @@ public class SearchDTO {
   private Object searchAfterScore;
   private Long searchAfterCode;
 
+  @Singular
+  private List<String> genres;
+
+  @Singular
+  private List<String> certificates;
+
   public List<String> getSearchAfter() {
     return Objects.nonNull(searchAfterCode) && Objects.nonNull(searchAfterScore) ? List.of(searchAfterScore.toString(), searchAfterCode.toString()) :
         Collections.emptyList();
+  }
+
+  public Map<String, List<String>> getMapFilters() {
+    return new HashMap<>() {{
+      put("genres", CollectionUtils.isEmpty(genres) ? Collections.emptyList() : genres);
+      put("certificates", CollectionUtils.isEmpty(certificates) ? Collections.emptyList() : certificates);
+    }};
   }
 }
