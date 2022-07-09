@@ -1,10 +1,12 @@
 package com.company.searchstore.controllers;
 
+import com.company.searchstore.dto.FacetsDTO;
 import com.company.searchstore.dto.MovieCatalogDTO;
 import com.company.searchstore.dto.SearchDTO;
 import com.company.searchstore.services.SearchHLRCService;
 import com.company.searchstore.services.SearchService;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.validation.Valid;
@@ -41,7 +43,7 @@ public class SearchController {
   }
 
   @GetMapping("facets")
-  public ResponseEntity<Map<String, Map<String, Long>>> getFacets(@Valid SearchDTO searchDTO) throws IOException {
+  public ResponseEntity<Map<String, List<FacetsDTO>>> getFacets(@Valid SearchDTO searchDTO) throws IOException {
     return ResponseEntity.ok(service.getFacets(searchDTO));
   }
 }

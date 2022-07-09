@@ -3,11 +3,10 @@ package com.company.searchstore.services;
 import static com.company.searchstore.core.fields.FieldAttr.Aggregations.FACET_CERTIFICATE_NAME;
 import static com.company.searchstore.core.fields.FieldAttr.Aggregations.FACET_GENRE_NAME;
 
-import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
-import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.company.searchstore.core.SearchCoreService;
 import com.company.searchstore.core.fields.FieldAttr.Suggest;
+import com.company.searchstore.dto.FacetsDTO;
 import com.company.searchstore.dto.MovieCatalogDTO;
 import com.company.searchstore.dto.MovieDTO;
 import com.company.searchstore.dto.SearchDTO;
@@ -61,17 +60,17 @@ public class SearchService {
     return suggestionMovies;
   }
 
-  public Map<String, Map<String, Long>> getFacets(SearchDTO searchDTO) throws IOException {
+  public Map<String, List<FacetsDTO>> getFacets(SearchDTO searchDTO) throws IOException {
     var response = service.getFacets(searchDTO.getText(), searchDTO.getSearchAfter(), searchDTO.getMapFilters());
     return parseResults(response, List.of(FACET_GENRE_NAME, FACET_CERTIFICATE_NAME));
   }
 
-  private Map<String, Map<String, Long>> parseResults(SearchResponse<Void> response, List<String> aggNames) {
-    Map<String, Map<String, Long>> facets = new HashMap<>();
-    Map<String, Long> values = new HashMap<>();
+  private Map<String, List<FacetsDTO>> parseResults(SearchResponse<Void> response, List<String> aggNames) {
+    Map<String, List<FacetsDTO>> facets = new HashMap<>();
     for (var name : aggNames) {
       var list = response.aggregations().get(name).sterms().buckets().array();
-      facets.put(name, list.stream().collect(Collectors.toMap(StringTermsBucket::key, MultiBucketBase::docCount)));
+      var facetsList = list.stream().map(l -> new FacetsDTO(l.key(), l.docCount())).collect(Collectors.toList());
+      facets.put(name, facetsList);
     }
     return facets;
   }

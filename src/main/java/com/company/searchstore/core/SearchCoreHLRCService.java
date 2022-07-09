@@ -12,6 +12,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -71,6 +72,8 @@ public class SearchCoreHLRCService {
       boolQuery
           .minimumShouldMatch(1)
           .should(QueryBuilders.multiMatchQuery(term)
+              .fuzzyTranspositions(true)
+              .fuzziness(Fuzziness.ONE)
               .field(Movie.TITLE_FIELD, 5)
               .field(Movie.ACTORS_SUGGEST, 5)
               .field(Movie.DESCRIPTION_FIELD, 2))
