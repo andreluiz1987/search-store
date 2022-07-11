@@ -1,5 +1,6 @@
 package com.company.searchstore.dto;
 
+import com.company.searchstore.core.sort.SortEnum;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,8 @@ public class SearchDTO {
 
   @Singular
   private List<String> certificates;
+
+  private SortEnum sort = SortEnum.MOST_POPULAR;
 
   public List<String> getSearchAfter() {
     return Objects.nonNull(searchAfterCode) && Objects.nonNull(searchAfterScore) ? List.of(searchAfterScore.toString(), searchAfterCode.toString()) :

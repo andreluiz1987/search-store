@@ -127,10 +127,25 @@ public class SearchCoreService {
 
   private void addQuery(Builder builder, String term, Map<String, List<String>> filters) {
     if (isEmpty(term)) {
-      builder.query(Query.of(q -> q.matchAll(MatchAllQuery.of(ma -> ma))));
+      queryMatchAll(builder, filters);
     } else {
       buildBoolQuery(builder, term, filters);
     }
+  }
+
+  private void queryMatchAll(Builder builder, Map<String, List<String>> filters) {
+    var filter = getFilters(filters);
+    var matchAll = Query.of(q -> q.matchAll(MatchAllQuery.of(ma -> ma)));
+    var boolQuery = BoolQuery.of(
+        bq -> {
+          if (filter.size() > 0) {
+            bq.filter(filter);
+          }
+          bq.must(matchAll);
+          return bq;
+        }
+    );
+    builder.query(Query.of(q -> q.bool(boolQuery)));
   }
 
   private void buildBoolQuery(Builder builder, String term, Map<String, List<String>> mapFilters) {

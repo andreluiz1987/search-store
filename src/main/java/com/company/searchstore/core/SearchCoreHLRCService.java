@@ -2,8 +2,9 @@ package com.company.searchstore.core;
 
 import static com.company.searchstore.core.fields.FieldAttr.Suggest.DID_YOU_MEAN;
 
-import com.company.searchstore.core.fields.FieldAttr;
 import com.company.searchstore.core.fields.FieldAttr.Movie;
+import com.company.searchstore.core.sort.SortEnum;
+import com.company.searchstore.core.sort.SortFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +17,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.search.suggest.SuggestBuilder;
 import org.elasticsearch.search.suggest.SuggestBuilders;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +31,7 @@ public class SearchCoreHLRCService {
   private String index;
   private final RestHighLevelClient client;
 
-  public SearchResponse searchTerm(String term, int size, List<String> searchAfter, Map<String, List<String>> filters)
+  public SearchResponse searchTerm(String term, int size, List<String> searchAfter, Map<String, List<String>> filters, SortEnum sortEnum)
       throws IOException {
 
     var searchRequest = new SearchRequest();
@@ -47,7 +46,7 @@ public class SearchCoreHLRCService {
 
     addSearchAfter(searchAfter, searchSourceBuilder);
 
-    addSort(searchSourceBuilder);
+    addSort(searchSourceBuilder, sortEnum);
 
     addSuggestion(term, searchSourceBuilder);
 
@@ -59,7 +58,7 @@ public class SearchCoreHLRCService {
 
   private void addSuggestion(String term, SearchSourceBuilder searchSourceBuilder) {
     var suggestBuilder = new SuggestBuilder();
-    suggestBuilder.addSuggestion(DID_YOU_MEAN, SuggestBuilders.phraseSuggestion(FieldAttr.Suggest.TITLE_SUGGEST)
+    suggestBuilder.addSuggestion(DID_YOU_MEAN, SuggestBuilders.phraseSuggestion(Movie.TITLE_SUGGEST)
         .size(3)
         .maxErrors(4)
         .text(term));
@@ -68,19 +67,23 @@ public class SearchCoreHLRCService {
 
   private void addQuery(String term, SearchSourceBuilder searchSourceBuilder, BoolQueryBuilder boolQuery) {
     if (StringUtils.hasText(term)) {
-      boolQuery
-          .minimumShouldMatch(1)
-          .should(QueryBuilders.multiMatchQuery(term)
-              .fuzzyTranspositions(true)
-              .operator(Operator.AND)
-              .field(Movie.TITLE_FIELD, 5)
-              .field(Movie.ACTORS_SUGGEST, 5)
-              .field(Movie.DESCRIPTION_FIELD, 2))
-          .should(QueryBuilders.matchQuery(Movie.TITLE_FIELD, term).operator(Operator.AND).boost(10));
-      searchSourceBuilder.query(boolQuery);
+      queryWithTerm(term, searchSourceBuilder, boolQuery);
     } else {
-      searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+      searchSourceBuilder.query(boolQuery.minimumShouldMatch(0).must(QueryBuilders.matchAllQuery()));
     }
+  }
+
+  private void queryWithTerm(String term, SearchSourceBuilder searchSourceBuilder, BoolQueryBuilder boolQuery) {
+    boolQuery
+        .minimumShouldMatch(1)
+        .should(QueryBuilders.multiMatchQuery(term)
+            .fuzzyTranspositions(true)
+            .operator(Operator.AND)
+            .field(Movie.TITLE_FIELD, 5)
+            .field(Movie.ACTORS_SUGGEST, 5)
+            .field(Movie.DESCRIPTION_FIELD, 2))
+        .should(QueryBuilders.matchQuery(Movie.TITLE_FIELD, term).operator(Operator.AND).boost(10));
+    searchSourceBuilder.query(boolQuery);
   }
 
   private void addFilters(Map<String, List<String>> filters, BoolQueryBuilder boolQuery) {
@@ -101,9 +104,7 @@ public class SearchCoreHLRCService {
     }
   }
 
-  private void addSort(SearchSourceBuilder searchSourceBuilder) {
-    searchSourceBuilder
-        .sort(SortBuilders.fieldSort("_score").order(SortOrder.DESC))
-        .sort(SortBuilders.fieldSort("code").order(SortOrder.ASC));
+  private void addSort(SearchSourceBuilder searchSourceBuilder, SortEnum sortEnum) {
+    SortFactory.getInstance(sortEnum).addSort(searchSourceBuilder);
   }
 }

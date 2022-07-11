@@ -31,7 +31,8 @@ public class SearchHLRCService {
   private final ObjectMapper objectMapper;
 
   public MovieCatalogDTO search(SearchDTO searchDTO) throws IOException {
-    var response = serviceHLRC.searchTerm(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter(), searchDTO.getMapFilters());
+    var response = serviceHLRC.searchTerm(searchDTO.getText(), searchDTO.getSize(), searchDTO.getSearchAfter(),
+        searchDTO.getMapFilters(), searchDTO.getSort());
     var movies = new ArrayList<MovieDTO>();
     getResultDocuments(response, movies);
     return MovieCatalogDTO.builder()
