@@ -15,14 +15,18 @@ public class MovieDTO {
   private String title;
   @JsonIgnore
   private String director;
+  @JsonIgnore
   private String description;
+  @JsonIgnore
   List<String> actors;
   @JsonIgnore
   private int code;
   @JsonIgnore
   private int year;
+  @JsonIgnore
   private String avatar;
   private String certificate;
+  @JsonIgnore
   private double rating;
   @JsonIgnore
   private String runtime;

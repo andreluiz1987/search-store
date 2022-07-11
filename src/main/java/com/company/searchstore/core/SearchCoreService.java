@@ -142,7 +142,7 @@ public class SearchCoreService {
             applyFieldBoost(FieldAttr.Movie.TITLE_FIELD, 5),
             applyFieldBoost(FieldAttr.Movie.DESCRIPTION_FIELD, 2),
             applyFieldBoost(FieldAttr.Movie.ACTORS_SUGGEST, 5))
-            .operator(Operator.Or).query(term))));
+            .operator(Operator.And).query(term))));
     var boolQuery = BoolQuery.of(
         bq -> {
           bq.filter(filters);
