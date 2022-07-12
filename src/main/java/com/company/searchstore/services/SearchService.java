@@ -38,6 +38,7 @@ public class SearchService {
     return MovieCatalogDTO.builder()
         .movies(movies)
         .size(searchDTO.getSize())
+        .sort(searchDTO.getSort())
         .total(getTotalHits(response))
         .build();
   }

@@ -39,6 +39,7 @@ public class SearchHLRCService {
         .movies(movies)
         .size(searchDTO.getSize())
         .total(getTotalHits(response))
+        .sort(searchDTO.getSort())
         .suggestion(getSuggestion(response.getSuggest()))
         .build();
   }
