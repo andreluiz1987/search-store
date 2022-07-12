@@ -47,7 +47,7 @@ public class SearchService {
   }
 
   public MovieMltListDTO getMoreLikeThis(SearchMltDTO dto) throws IOException {
-    var response = service.getMoreLikeThis(dto.getCode());
+    var response = service.getMoreLikeThis(dto.getCode(), dto.getSize());
     return MovieMltListDTO.builder()
         .movies(mapper.toMltDtos(response.hits().hits().stream().map(Hit::source).collect(Collectors.toList())))
         .size(dto.getSize())

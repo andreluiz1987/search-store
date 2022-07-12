@@ -209,9 +209,9 @@ public class SearchCoreService {
     }
   }
 
-  public SearchResponse<Movie> getMoreLikeThis(String code) throws IOException {
+  public SearchResponse<Movie> getMoreLikeThis(String code, int size) throws IOException {
     SearchRequest searchRequest = SearchRequest.of(s -> s.index(index)
-        .size(5)
+        .size(size)
         .query(Query.of(q -> q.term(TermQuery.of(tq -> tq.value(code).field("code"))))));
     var response = client.search(searchRequest, Void.class);
     var id = response.hits().hits().get(0).id();
