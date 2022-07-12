@@ -233,4 +233,11 @@ public class SearchCoreService {
     s.sort(SortOptions.of(so -> so
         .field(FieldSort.of(fs -> fs.field("code").order(SortOrder.Asc)))));
   }
+
+  public SearchResponse<Movie> getMovieByCode(String code) throws IOException {
+    SearchRequest searchRequest = SearchRequest.of(s -> s.index(index)
+        .size(5)
+        .query(Query.of(q -> q.term(TermQuery.of(tq -> tq.value(code).field("code"))))));
+    return client.search(searchRequest, Movie.class);
+  }
 }

@@ -4,12 +4,15 @@ import static com.company.searchstore.core.fields.FieldAttr.Aggregations.FACET_C
 import static com.company.searchstore.core.fields.FieldAttr.Aggregations.FACET_GENRE_NAME;
 
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.company.searchstore.core.SearchCoreService;
 import com.company.searchstore.core.fields.FieldAttr.Suggest;
 import com.company.searchstore.dto.FacetsDTO;
 import com.company.searchstore.dto.MovieCatalogDTO;
 import com.company.searchstore.dto.MovieDTO;
+import com.company.searchstore.dto.MovieMltListDTO;
 import com.company.searchstore.dto.SearchDTO;
+import com.company.searchstore.dto.SearchMltDTO;
 import com.company.searchstore.mappers.MovieMapper;
 import com.company.searchstore.models.Movie;
 import java.io.IOException;
@@ -43,14 +46,11 @@ public class SearchService {
         .build();
   }
 
-  public MovieCatalogDTO getMoreLikeThis(String code) throws IOException {
-    var response = service.getMoreLikeThis(code);
-    var movies = new ArrayList<MovieDTO>();
-    getResultDocuments(response, movies);
-    return MovieCatalogDTO.builder()
-        .movies(movies)
-        .size(0)
-        .total(getTotalHits(response))
+  public MovieMltListDTO getMoreLikeThis(SearchMltDTO dto) throws IOException {
+    var response = service.getMoreLikeThis(dto.getCode());
+    return MovieMltListDTO.builder()
+        .movies(mapper.toMltDtos(response.hits().hits().stream().map(Hit::source).collect(Collectors.toList())))
+        .size(dto.getSize())
         .build();
   }
 
@@ -89,5 +89,13 @@ public class SearchService {
 
   private long getTotalHits(SearchResponse<Movie> response) {
     return Objects.nonNull(response.hits().total()) ? response.hits().total().value() : 0;
+  }
+
+  public MovieDTO searchByCode(String code) throws IOException {
+    SearchResponse<Movie> response = service.getMovieByCode(code);
+    if (response.hits().hits().size() == 0) {
+      return null;
+    }
+    return mapper.toDto(response.hits().hits().get(0).source());
   }
 }
