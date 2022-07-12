@@ -10,11 +10,15 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Like;
+import co.elastic.clients.elasticsearch._types.query_dsl.LikeDocument;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchAllQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.MoreLikeThisQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -203,6 +207,24 @@ public class SearchCoreService {
     if (!searchAfter.isEmpty()) {
       s.searchAfter(searchAfter);
     }
+  }
+
+  public SearchResponse<Movie> getMoreLikeThis(String code) throws IOException {
+    SearchRequest searchRequest = SearchRequest.of(s -> s.index(index)
+        .size(5)
+        .query(Query.of(q -> q.term(TermQuery.of(tq -> tq.value(code).field("code"))))));
+    var response = client.search(searchRequest, Void.class);
+    var id = response.hits().hits().get(0).id();
+    MoreLikeThisQuery moreLikeThisQuery = MoreLikeThisQuery.of(m ->
+        m.minTermFreq(1)
+            .maxQueryTerms(10)
+            .fields(FieldAttr.Movie.DIRECTOR_SUGGEST, FieldAttr.Movie.GENRE_FIELD, FieldAttr.Movie.TITLE_FIELD)
+            .like(List.of(Like.of(l -> l.document(LikeDocument.of(ld -> ld.id(id).index(index))))))
+    );
+    searchRequest = SearchRequest.of(s -> s.index(index)
+        .size(5)
+        .query(Query.of(q -> q.moreLikeThis(moreLikeThisQuery))));
+    return client.search(searchRequest, Movie.class);
   }
 
   private void addSort(SearchRequest.Builder s) {

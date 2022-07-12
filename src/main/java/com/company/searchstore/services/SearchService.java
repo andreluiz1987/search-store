@@ -43,6 +43,17 @@ public class SearchService {
         .build();
   }
 
+  public MovieCatalogDTO getMoreLikeThis(String code) throws IOException {
+    var response = service.getMoreLikeThis(code);
+    var movies = new ArrayList<MovieDTO>();
+    getResultDocuments(response, movies);
+    return MovieCatalogDTO.builder()
+        .movies(movies)
+        .size(0)
+        .total(getTotalHits(response))
+        .build();
+  }
+
   private void getResultDocuments(SearchResponse<Movie> response, ArrayList<MovieDTO> movies) {
     for (var hit : response.hits().hits()) {
       var dto = mapper.toDto(hit.source());

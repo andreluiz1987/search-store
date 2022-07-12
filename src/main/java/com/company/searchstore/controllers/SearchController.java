@@ -37,6 +37,11 @@ public class SearchController {
     return ResponseEntity.ok(searchHLRC.search(searchDTO));
   }
 
+  @GetMapping("mlt")
+  public ResponseEntity<MovieCatalogDTO> recommedation(String code) throws IOException {
+    return ResponseEntity.ok(service.getMoreLikeThis(code));
+  }
+
   @GetMapping("autocomplete")
   public ResponseEntity<Set<String>> getSuggestions(@Valid SearchDTO searchDTO) throws IOException {
     return ResponseEntity.ok(service.getSuggestions(searchDTO));
