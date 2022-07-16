@@ -1,0 +1,118 @@
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "en_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "stop"
+          ]
+        },
+        "shingle_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "shingle_filter"
+          ]
+        }
+      },
+      "filter": {
+        "shingle_filter": {
+          "type": "shingle",
+          "min_shingle_size": 2,
+          "max_shingle_size": 3
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "analyzer": "en_analyzer",
+        "fields": {
+          "suggest": {
+            "type": "text",
+            "analyzer": "shingle_analyzer"
+          }
+        }
+      },
+      "actors": {
+        "type": "text",
+        "analyzer": "en_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "date": {
+        "type": "keyword",
+        "doc_values": false
+      },
+      "description": {
+        "type": "text",
+        "analyzer": "en_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "director": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "genre": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "metascore": {
+        "type": "long"
+      },
+      "rating": {
+        "type": "float"
+      },
+      "revenue": {
+        "type": "keyword"
+      },
+      "runtime": {
+        "type": "keyword"
+      },
+      "title_suggest": {
+        "type": "completion",
+        "analyzer": "simple",
+        "preserve_separators": true,
+        "preserve_position_increments": true,
+        "max_input_length": 50
+      },
+      "votes": {
+        "type": "long"
+      },
+      "year": {
+        "type": "long"
+      },
+      "avatar": {
+        "type": "keyword"
+      },
+      "certificate": {
+        "type": "keyword"
+      }
+    }
+  }
+}
