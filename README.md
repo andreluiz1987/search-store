@@ -1,7 +1,5 @@
 # API Search Store
 
-# Search Store APP
-
 This project represents the back-end api responsible for performing search queries in Elasticsearch.
 This API provider features:
 
